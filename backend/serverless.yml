@@ -9,6 +9,8 @@ plugins:
   - serverless-dynamodb-local
   - serverless-offline
   - serverless-dotenv-plugin
+  - serverless-aws-documentation
+  - serverless-reqvalidator-plugin
 
 provider:
   name: aws
@@ -34,6 +36,23 @@ provider:
     SIGNED_URL_EXPIRATION: 300
 
 custom:
+  documentation:
+    api:
+      info:
+        version: v1.0.0
+        title: EarnUp API
+        description: Serverless application for earning rewards with your Google Tasks
+    models:
+      - name: CreateRewardRequest
+        contentType: application/json
+        schema: ${file(models/create-reward-request.json)}
+      - name: UpdateRewardRequest
+        contentType: application/json
+        schema: ${file(models/update-reward-request.json)}
+      - name: RedeemRewardRequest
+        contentType: application/json
+        schema: ${file(models/redeem-reward-request.json)}
+
   serverless-offline:
     port: 4000
 
@@ -170,6 +189,12 @@ functions:
           path: rewards
           cors: true
           authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Create a new reward
+            description: Create a new reward
+            requestModels:
+              'application/json': CreateRewardRequest
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -184,6 +209,12 @@ functions:
           path: rewards/{rewardId}
           cors: true
           authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Update a new reward
+            description: Update a new reward
+            requestModels:
+              'application/json': UpdateRewardRequest
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -217,6 +248,12 @@ functions:
           path: rewards/{rewardId}/redeem
           cors: true
           authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Redeem a new reward
+            description: Redeem a new reward
+            requestModels:
+              'application/json': RedeemRewardRequest
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -314,15 +351,15 @@ resources:
         RestApiId:
           Ref: ApiGatewayRestApi
 
-    # Don't think I need this for the project
-    # RequestBodyValidator:
-    #   Type: AWS::ApiGateway::RequestValidator
-    #   Properties:
-    #     Name: 'request-body-validator'
-    #     RestApiId:
-    #       Ref: ApiGatewayRestApi
-    #     ValidateRequestBody: true
-    #     ValidateRequestParameters: false
+    # resource for using the API Gateway request validators for each lambda
+    RequestBodyValidator:
+      Type: AWS::ApiGateway::RequestValidator
+      Properties:
+        Name: 'request-body-validator'
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ValidateRequestBody: true
+        ValidateRequestParameters: false
 
     # TODO: schema seems inefficient. Might be better to have a users table that stores all other tables as a property.
     # It would have a HASH PK of userId and use query() to fetch other properties. Not sure if that's better.
