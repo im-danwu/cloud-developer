@@ -1,25 +1,30 @@
-import React, { useEffect } from 'react'
-import { Link, Route, Router, Switch } from 'react-router-dom'
-import { Grid, Loader, Menu, Segment } from 'semantic-ui-react'
+import React from 'react'
+import {
+  Link,
+  Route,
+  Router,
+  Switch,
+  RouteComponentProps
+} from 'react-router-dom'
+import { Grid, Menu, Segment } from 'semantic-ui-react'
 
 import Auth from './auth/Auth'
-import { EditTodo } from './components/EditTodo'
 import { EditReward } from './components/EditReward'
 import { LogIn } from './components/LogIn'
 import { NotFound } from './components/NotFound'
-import { Todos } from './components/Todos'
+import { Todos } from './components/Task'
 import { Rewards } from './components/Rewards'
+import { AccountBalance } from './components/AccountBalance'
 import { provideAccount } from './state/accountState'
 
 export interface AppProps {}
 
-export interface AppProps {
+export interface AppProps extends RouteComponentProps {
   auth: Auth
-  history: any
 }
 
 const App: React.FunctionComponent<AppProps> = ({ children, ...props }) => {
-  const { auth } = props
+  const { auth, history } = props
 
   const handleLogin = () => auth.login()
 
@@ -30,7 +35,11 @@ const App: React.FunctionComponent<AppProps> = ({ children, ...props }) => {
       <Menu.Item name="home">
         <Link to="/">Home</Link>
       </Menu.Item>
-
+      {auth.isAuthenticated() && (
+        <Menu.Item name="tasks">
+          <Link to="/tasks">Tasks</Link>
+        </Menu.Item>
+      )}
       <Menu.Menu position="right">{logInLogOutButton()}</Menu.Menu>
     </Menu>
   )
@@ -53,28 +62,25 @@ const App: React.FunctionComponent<AppProps> = ({ children, ...props }) => {
 
     return (
       <Switch>
-        <Route
-          path="/"
-          exact
-          render={routeProps => <Rewards {...routeProps} auth={auth} />}
-        />
+        <Route path="/" exact>
+          <AccountBalance auth={auth} />
+          <Rewards history={history} auth={auth} />
+        </Route>
 
-        <Route
-          path="/todos"
-          exact
-          render={routeProps => <Todos {...routeProps} auth={auth} />}
-        />
-
-        <Route
-          path="/todos/:todoId/edit"
-          exact
-          render={routeProps => <EditTodo {...routeProps} auth={auth} />}
-        />
+        <Route path="/tasks" exact>
+          <AccountBalance auth={auth} />
+          <Todos history={history} auth={auth} />
+        </Route>
 
         <Route
           path="/rewards/:rewardId/edit"
           exact
-          render={routeProps => <EditReward {...routeProps} auth={auth} />}
+          render={routeProps => (
+            <>
+              <AccountBalance auth={auth} />
+              <EditReward auth={auth} {...routeProps} />
+            </>
+          )}
         />
 
         <Route component={NotFound} />

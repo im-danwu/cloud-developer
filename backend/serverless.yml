@@ -92,48 +92,6 @@ functions:
           - dynamodb:Query
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.TODOS_INDEX}
 
-  CreateTodo:
-    handler: src/lambda/http/todo/createTodo.handler
-    events:
-      - http:
-          method: post
-          path: todos
-          cors: true
-          authorizer: Auth
-    iamRoleStatements:
-      - Effect: Allow
-        Action:
-          - dynamodb:PutItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
-
-  UpdateTodo:
-    handler: src/lambda/http/todo/updateTodo.handler
-    events:
-      - http:
-          method: patch
-          path: todos/{todoId}
-          cors: true
-          authorizer: Auth
-    iamRoleStatements:
-      - Effect: Allow
-        Action:
-          - dynamodb:UpdateItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
-
-  DeleteTodo:
-    handler: src/lambda/http/todo/deleteTodo.handler
-    events:
-      - http:
-          method: delete
-          path: todos/{todoId}
-          cors: true
-          authorizer: Auth
-    iamRoleStatements:
-      - Effect: Allow
-        Action:
-          - dynamodb:DeleteItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
-
   GetTodoPicUrl:
     handler: src/lambda/http/todo/generateUploadUrl.handler
     events:
