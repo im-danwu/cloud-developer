@@ -74,12 +74,12 @@ functions:
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
 
-  GetTodos:
+  GetTasks:
     handler: src/lambda/http/todo/getTodos.handler
     events:
       - http:
           method: get
-          path: todos
+          path: tasks
           cors: true
           authorizer: Auth
     iamRoleStatements:

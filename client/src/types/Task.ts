@@ -2,7 +2,7 @@ export interface Task {
   todoId: string
   createdAt: string
   name: string
-  dueDate: string
+  completedAt: string
   done: boolean
   attachmentUrl?: string
 }

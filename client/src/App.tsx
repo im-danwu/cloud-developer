@@ -12,7 +12,7 @@ import Auth from './auth/Auth'
 import { EditReward } from './components/EditReward'
 import { LogIn } from './components/LogIn'
 import { NotFound } from './components/NotFound'
-import { Todos } from './components/Task'
+import { Tasks } from './components/Tasks'
 import { Rewards } from './components/Rewards'
 import { AccountBalance } from './components/AccountBalance'
 import { provideAccount } from './state/accountState'
@@ -69,7 +69,7 @@ const App: React.FunctionComponent<AppProps> = ({ children, ...props }) => {
 
         <Route path="/tasks" exact>
           <AccountBalance auth={auth} />
-          <Todos history={history} auth={auth} />
+          <Tasks history={history} auth={auth} />
         </Route>
 
         <Route

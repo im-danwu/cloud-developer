@@ -1,22 +1,11 @@
 import dateFormat from 'dateformat'
 import { History } from 'history'
-import update from 'immutability-helper'
 import * as React from 'react'
-import {
-  Button,
-  Checkbox,
-  Divider,
-  Grid,
-  Header,
-  Icon,
-  Input,
-  Image,
-  Loader
-} from 'semantic-ui-react'
+import { Divider, Grid, Header, Loader } from 'semantic-ui-react'
 
-import { createTask, deleteTask, getTasks, patchTask } from '../api/tasks-api'
+import { getTasks } from '../api/tasks-api'
 import Auth from '../auth/Auth'
-import { Task } from '../types/Todo'
+import { Task } from '../types/Task'
 
 interface TasksProps {
   auth: Auth
@@ -49,7 +38,8 @@ export class Tasks extends React.PureComponent<TasksProps, TasksState> {
   render() {
     return (
       <div>
-        <Header as="h1">Tasks</Header>
+        <Divider />
+        <Header as="h1">Completed Tasks</Header>
         {this.renderTasks()}
       </div>
     )
@@ -76,21 +66,28 @@ export class Tasks extends React.PureComponent<TasksProps, TasksState> {
   renderTasksList() {
     return (
       <Grid padded>
-        {this.state.tasks.map(task => {
-          return (
-            <Grid.Row key={task.taskId}>
-              <Grid.Column width={10} verticalAlign="middle">
-                {task.name}
-              </Grid.Column>
-              <Grid.Column width={3} floated="right">
-                {task.dueDate}
-              </Grid.Column>
-              <Grid.Column width={16}>
-                <Divider />
-              </Grid.Column>
-            </Grid.Row>
+        {this.state.tasks
+          .sort((a, b) =>
+            new Date(a.completedAt) < new Date(b.completedAt) ? 1 : -1
           )
-        })}
+          .map(task => {
+            return (
+              <Grid.Row key={task.todoId}>
+                <Grid.Column width={10} verticalAlign="middle">
+                  <Header as="h3">
+                    {task.name}
+                    <Header.Subheader>
+                      {dateFormat(task.completedAt, 'yyyy-mm-dd')}
+                    </Header.Subheader>
+                  </Header>
+                </Grid.Column>
+                <Grid.Column width={3} floated="right"></Grid.Column>
+                <Grid.Column width={16}>
+                  <Divider />
+                </Grid.Column>
+              </Grid.Row>
+            )
+          })}
       </Grid>
     )
   }
