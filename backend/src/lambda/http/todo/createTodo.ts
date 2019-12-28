@@ -20,7 +20,6 @@ const bucketName = process.env.IMAGES_S3_BUCKET
 export const handler: APIGatewayProxyHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  // TODO: add API gateway request validation to handle 422s
   const newTodo: CreateTodoRequest = JSON.parse(event.body)
   const userId = getUserId(event)
 

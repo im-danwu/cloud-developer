@@ -1,4 +1,4 @@
-import { History } from 'history'
+import { RouteComponentProps } from 'react-router-dom'
 import update from 'immutability-helper'
 import React, { useEffect, useState } from 'react'
 import {
@@ -25,12 +25,12 @@ import { useAccount } from '../state/accountState'
 
 interface RewardsProps {
   auth: Auth
-  history: History
+  history: RouteComponentProps["history"]
 }
 
 export const Rewards: React.FunctionComponent<RewardsProps> = props => {
-  const { account, handleSyncTasks, handleNewBalance } = useAccount()
-  const { balance, syncingTasks } = account
+  const { account, handleNewBalance } = useAccount()
+  const { balance } = account
 
   const [rewards, setRewards] = useState<Reward[]>([])
   const [newRewardName, setNewRewardName] = useState('')
@@ -38,12 +38,6 @@ export const Rewards: React.FunctionComponent<RewardsProps> = props => {
   const [loadingRewards, setLoadingRewards] = useState(true)
 
   const { auth } = props
-
-  useEffect(() => {
-    if (auth.getIdToken()) {
-      handleSyncTasks(auth.getIdToken())
-    }
-  }, [auth])
 
   useEffect(() => {
     async function loadRewards() {
@@ -101,8 +95,11 @@ export const Rewards: React.FunctionComponent<RewardsProps> = props => {
     }
   }
 
-  const onRewardCheck = async (pos: number) => {
+  const onRewardCheck = async (rewardId: string) => {
+    const pos = rewards.findIndex(r => r.rewardId === rewardId)
     const reward = rewards[pos]
+
+    if (!reward) return // NB: should never happen
 
     if (balance === null || reward.cost > balance) {
       return alert('This reward costs too much')
@@ -128,25 +125,35 @@ export const Rewards: React.FunctionComponent<RewardsProps> = props => {
     setLoadingRewards(false)
   }
 
-  const renderLoading = (loadingMsg: string) => (
+  const renderLoading = () => (
     <Grid.Row>
       <Loader indeterminate active inline="centered">
-        {loadingMsg}
+        Loading rewards...
       </Loader>
     </Grid.Row>
   )
 
   const renderRewardsList = () => {
+    const [redeemed, unredeemed] = rewards.reduce<Reward[][]>(
+      (lists, reward) => {
+        lists[reward.redeemed ? 0 : 1].push(reward)
+        return lists
+      },
+      [[], []]
+    )
     return (
-      <Grid padded>
-        {rewards
-          .sort(a => (a.redeemed ? 1 : -1))
-          .map((reward, pos) => {
+      <>
+        <Header as="h2">Rewards List</Header>
+        <Grid padded>
+          {[
+            ...unredeemed.sort((a, b) => a.cost - b.cost),
+            ...redeemed.sort((a, b) => a.cost - b.cost)
+          ].map((reward, pos) => {
             return (
               <Grid.Row key={reward.rewardId}>
                 <Grid.Column width={1} verticalAlign="middle">
                   <Checkbox
-                    onChange={() => onRewardCheck(pos)}
+                    onChange={() => onRewardCheck(reward.rewardId)}
                     checked={reward.redeemed}
                   />
                 </Grid.Column>
@@ -196,38 +203,36 @@ export const Rewards: React.FunctionComponent<RewardsProps> = props => {
               </Grid.Row>
             )
           })}
-      </Grid>
+        </Grid>
+      </>
     )
   }
-
-  const renderHeader = () => (
-    <div>
-      <Header as="h1">Account Balance</Header>
-      <Header.Subheader>{balance} points</Header.Subheader>
-    </div>
-  )
 
   const renderCreateRewardForm = () => {
     return (
       <>
         <Grid.Row width={16}>
           <Divider />
-          <Header as="h2">Rewards</Header>
+          <Header as="h2">New Reward Form</Header>
         </Grid.Row>
         <Grid.Row>
           <Grid.Column width={16}>
             <Form>
-              <Form.Field
-                label="Reward name"
-                placeholder="Treat yo self"
-                onChange={handleNameChange}
-                control="input"
-              />
-              <Form.Field
-                label="Reward cost"
-                onChange={handleCostChange}
-                control="input"
-              />
+              <Form.Group widths="equal">
+                <Form.Field
+                  label="Reward name"
+                  placeholder="Treat yo self"
+                  onChange={handleNameChange}
+                  control="input"
+                  value={newRewardName}
+                />
+                <Form.Field
+                  label="Reward cost"
+                  onChange={handleCostChange}
+                  control="input"
+                  value={newRewardCost}
+                />
+              </Form.Group>
               <Form.Button
                 type="submit"
                 icon
@@ -250,11 +255,8 @@ export const Rewards: React.FunctionComponent<RewardsProps> = props => {
 
   return (
     <div>
-      {syncingTasks
-        ? renderLoading('Checking your balance...')
-        : renderHeader()}
       {loadingRewards ? (
-        renderLoading('Loading rewards...')
+        renderLoading()
       ) : (
         <>
           {renderCreateRewardForm()}

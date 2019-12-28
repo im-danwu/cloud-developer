@@ -9,6 +9,8 @@ plugins:
   - serverless-dynamodb-local
   - serverless-offline
   - serverless-dotenv-plugin
+  - serverless-aws-documentation
+  - serverless-reqvalidator-plugin
 
 provider:
   name: aws
@@ -33,65 +35,24 @@ provider:
     IMAGES_S3_BUCKET: todo-images-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
 
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-        - dynamodb:Scan
-        - dynamodb:GetItem
-        - dynamodb:PutItem
-        - dynamodb:UpdateItem
-        - dynamodb:DeleteItem
-        - dynamodb:BatchWriteItem
-      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.TODOS_INDEX}
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-        - dynamodb:Scan
-        - dynamodb:GetItem
-        - dynamodb:PutItem
-        - dynamodb:UpdateItem
-        - dynamodb:DeleteItem
-        - dynamodb:BatchWriteItem
-      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TASK_LISTS_TABLE}
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TASK_LISTS_TABLE}/index/${self:provider.environment.TASK_LISTS_INDEX}
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-        - dynamodb:Scan
-        - dynamodb:GetItem
-        - dynamodb:PutItem
-        - dynamodb:UpdateItem
-        - dynamodb:DeleteItem
-        - dynamodb:BatchWriteItem
-      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REWARDS_TABLE}
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REWARDS_TABLE}/index/${self:provider.environment.REWARDS_INDEX}
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-        - dynamodb:Scan
-        - dynamodb:GetItem
-        - dynamodb:PutItem
-        - dynamodb:UpdateItem
-        - dynamodb:DeleteItem
-        - dynamodb:BatchWriteItem
-      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_TABLE}
-    - Effect: Allow
-      Action:
-        - s3:PutObject
-        - s3:GetObject
-      Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*
 custom:
+  documentation:
+    api:
+      info:
+        version: v1.0.0
+        title: EarnUp API
+        description: Serverless application for earning rewards with your Google Tasks
+    models:
+      - name: CreateRewardRequest
+        contentType: application/json
+        schema: ${file(models/create-reward-request.json)}
+      - name: UpdateRewardRequest
+        contentType: application/json
+        schema: ${file(models/update-reward-request.json)}
+      - name: RedeemRewardRequest
+        contentType: application/json
+        schema: ${file(models/redeem-reward-request.json)}
+
   serverless-offline:
     port: 4000
 
@@ -113,43 +74,25 @@ functions:
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
 
-  GetTodos:
+  GetTasks:
     handler: src/lambda/http/todo/getTodos.handler
     events:
       - http:
           method: get
-          path: todos
+          path: tasks
           cors: true
           authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.TODOS_INDEX}
 
-  CreateTodo:
-    handler: src/lambda/http/todo/createTodo.handler
-    events:
-      - http:
-          method: post
-          path: todos
-          cors: true
-          authorizer: Auth
-
-  UpdateTodo:
-    handler: src/lambda/http/todo/updateTodo.handler
-    events:
-      - http:
-          method: patch
-          path: todos/{todoId}
-          cors: true
-          authorizer: Auth
-
-  DeleteTodo:
-    handler: src/lambda/http/todo/deleteTodo.handler
-    events:
-      - http:
-          method: delete
-          path: todos/{todoId}
-          cors: true
-          authorizer: Auth
-
-  GenerateTodoUploadUrl:
+  GetTodoPicUrl:
     handler: src/lambda/http/todo/generateUploadUrl.handler
     events:
       - http:
@@ -157,6 +100,12 @@ functions:
           path: todos/{todoId}/attachment
           cors: true
           authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          # - s3:PutObject
+          - s3:GetObject
+        Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*
 
   GetRewards:
     handler: src/lambda/http/reward/getRewards.handler
@@ -166,6 +115,15 @@ functions:
           path: rewards
           cors: true
           authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REWARDS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REWARDS_TABLE}/index/${self:provider.environment.REWARDS_INDEX}
 
   GetReward:
     handler: src/lambda/http/reward/getReward.handler
@@ -175,6 +133,11 @@ functions:
           path: rewards/{rewardId}
           cors: true
           authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REWARDS_TABLE}
 
   CreateReward:
     handler: src/lambda/http/reward/createReward.handler
@@ -184,6 +147,17 @@ functions:
           path: rewards
           cors: true
           authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Create a new reward
+            description: Create a new reward
+            requestModels:
+              'application/json': CreateRewardRequest
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REWARDS_TABLE}
 
   UpdateReward:
     handler: src/lambda/http/reward/updateReward.handler
@@ -193,6 +167,22 @@ functions:
           path: rewards/{rewardId}
           cors: true
           authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Update a new reward
+            description: Update a new reward
+            requestModels:
+              'application/json': UpdateRewardRequest
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REWARDS_TABLE}
+      - Effect: Allow
+        Action:
+          - s3:GetObject
+          - s3:PutObject
+        Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*
 
   DeleteReward:
     handler: src/lambda/http/reward/deleteReward.handler
@@ -202,6 +192,11 @@ functions:
           path: rewards/{rewardId}
           cors: true
           authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REWARDS_TABLE}
 
   RedeemReward:
     handler: src/lambda/http/reward/redeemReward.handler
@@ -211,8 +206,26 @@ functions:
           path: rewards/{rewardId}/redeem
           cors: true
           authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Redeem a new reward
+            description: Redeem a new reward
+            requestModels:
+              'application/json': RedeemRewardRequest
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.REWARDS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_TABLE}
 
-  GenerateUploadUrl:
+  GetRewardPicUrl:
     handler: src/lambda/http/reward/generateUploadUrl.handler
     events:
       - http:
@@ -220,6 +233,12 @@ functions:
           path: rewards/{rewardId}/attachment
           cors: true
           authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - s3:GetObject
+          - s3:PutObject
+        Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*
 
   SyncTasks:
     handler: src/lambda/http/account/syncTasks.handler
@@ -229,6 +248,23 @@ functions:
           path: accounts/syncTasks
           cors: true
           authorizer: Auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:BatchWriteItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TASK_LISTS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_TABLE}
 
   PollTasks:
     handler: src/lambda/cron/pollTasks.handler
@@ -238,6 +274,23 @@ functions:
           name: pollTasks
           description: 'Polling for new completed tasks at a set interval.'
           rate: rate(1 minute)
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:BatchWriteItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TASK_LISTS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_TABLE}
 
 resources:
   Resources:
@@ -256,15 +309,15 @@ resources:
         RestApiId:
           Ref: ApiGatewayRestApi
 
-    # Don't think I need this for the project
-    # RequestBodyValidator:
-    #   Type: AWS::ApiGateway::RequestValidator
-    #   Properties:
-    #     Name: 'request-body-validator'
-    #     RestApiId:
-    #       Ref: ApiGatewayRestApi
-    #     ValidateRequestBody: true
-    #     ValidateRequestParameters: false
+    # resource for using the API Gateway request validators for each lambda
+    RequestBodyValidator:
+      Type: AWS::ApiGateway::RequestValidator
+      Properties:
+        Name: 'request-body-validator'
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ValidateRequestBody: true
+        ValidateRequestParameters: false
 
     # TODO: schema seems inefficient. Might be better to have a users table that stores all other tables as a property.
     # It would have a HASH PK of userId and use query() to fetch other properties. Not sure if that's better.
@@ -384,5 +437,9 @@ resources:
               Effect: Allow
               Principal: '*'
               Action: s3:GetObject
+              Resource: 'arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*'
+            - Effect: Allow
+              Action: s3:PutObject
+              Principal: '*'
               Resource: 'arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*'
         Bucket: !Ref AttachmentsBucket

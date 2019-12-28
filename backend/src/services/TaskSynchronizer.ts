@@ -1,13 +1,13 @@
-import * as winston from 'winston';
+import * as winston from "winston";
 
-import GoogleTaskAccessor from '../dataLayer/googleTaskAccess';
-import TaskListAccessor from '../dataLayer/taskListsAccess';
-import TodoAccessor from '../dataLayer/todosAccess';
-import UserAccessor from '../dataLayer/usersAccess';
-import { createLogger } from '../utils/logger';
+import GoogleTaskAccessor from "../dataLayer/googleTaskAccess";
+import TaskListAccessor from "../dataLayer/taskListsAccess";
+import TodoAccessor from "../dataLayer/todosAccess";
+import UserAccessor from "../dataLayer/usersAccess";
+import { createLogger } from "../utils/logger";
 
-import { GoogleTaskList, TaskList } from '../models/TaskList';
-import { TodoItem } from '../models/TodoItem';
+import { GoogleTaskList, TaskList } from "../models/TaskList";
+import { TodoItem } from "../models/TodoItem";
 
 /**
  * For one google account, grabs their tasklists and
@@ -56,7 +56,7 @@ export default class TaskSynchronizer {
       taskLists.map(taskList => this.getNewCompletedGoogleTasks(taskList))
     );
     this.logger.info(
-      'TaskSynchronizer retrieved new tasks for task lists',
+      "TaskSynchronizer retrieved new tasks for task lists",
       newTasksPerList
     );
     const additionalBalance = newTasksPerList.reduce(
@@ -67,9 +67,9 @@ export default class TaskSynchronizer {
       this.userId,
       additionalBalance
     );
-    // TODO: can also increment a newCompletedCountSinceLastLogin type feature
     return {
       balance: newBalance,
+      // TODO: can also increment a newCompletedCountSinceLastLogin type feature
       newTasksCount: additionalBalance
     };
   }
@@ -111,7 +111,7 @@ export default class TaskSynchronizer {
       todoId: task.id,
       createdAt: new Date().toISOString(),
       name: task.title,
-      done: task.status === 'completed',
+      done: task.status === "completed",
       completedAt: task.completed
     };
     // "kind": "tasks#task",

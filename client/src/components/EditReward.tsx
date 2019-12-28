@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Form, Button, Loader } from 'semantic-ui-react'
+import { Form, Button, Loader, Divider } from 'semantic-ui-react'
 import Auth from '../auth/Auth'
 import {
   getReward,
@@ -124,6 +124,7 @@ export class EditReward extends React.PureComponent<
   render() {
     return (
       <div>
+        <Divider />
         <h1>Upload new image</h1>
         {this.state.loadingReward ? (
           <Loader indeterminate active inline="centered">
